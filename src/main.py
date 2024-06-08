@@ -4,46 +4,65 @@ import pandas as pd
 from io import StringIO
 import time
 
-def run_query(client, query, covid_19_db, output):
-    response = client.start_query_execution(
-        QueryString=query,
-        QueryExecutionContext={'Database': covid_19_db},
-        ResultConfiguration={'OutputLocation': output}
+# create an athena client
+def create_athena_client():
+    return boto3.client(
+        "athena",
+        aws_access_key_id=aws_config['aws_access_key_id'],
+        aws_secret_access_key=aws_config['aws_secret_access_key'],
+        #aws_session_token=aws_config.get('aws_session_token'),  # Include session token if available
+        region_name=aws_config['region_name']
     )
-    
-    query_execution_id = response['QueryExecutionId']
-    status = 'RUNNING'
-    
-    while status in ['RUNNING', 'QUEUED']:
+
+# run a query on athena
+def start_query_execution(client):
+    return client.start_query_execution(
+        QueryString="SELECT * FROM enigma_jhu_enigma_jhu",
+        QueryExecutionContext={"Database": athena_config['database']},
+        ResultConfiguration={
+            "OutputLocation": athena_config['s3_staging_dir'],
+        },
+    )
+
+# query execution message
+def wait_for_query_to_complete(client, query_execution_id):
+    while True:
         response = client.get_query_execution(QueryExecutionId=query_execution_id)
         status = response['QueryExecution']['Status']['State']
         if status in ['SUCCEEDED', 'FAILED', 'CANCELLED']:
             break
-        time.sleep(1)
-    
-    if status == 'SUCCEEDED':
-        result = client.get_query_results(QueryExecutionId=query_execution_id)
-        rows = result['ResultSet']['Rows']
-        headers = [col['VarCharValue'] for col in rows[0]['Data']]
-        data = [[col.get('VarCharValue', None) for col in row['Data']] for row in rows[1:]]
-        return pd.DataFrame(data, columns=headers)
-    else:
-        raise Exception(f"Query failed with status: {status}")
+        time.sleep(1)  # Increase sleep time to reduce the number of API calls
+
+# download query results and save results in an output location on s3 bucket
+def download_query_results(query_execution_id):
+    temp_file_location = "athena_query_results.csv"
+    s3_client = boto3.client(
+        "s3",
+        aws_access_key_id=aws_config['aws_access_key_id'],
+        aws_secret_access_key=aws_config['aws_secret_access_key'],
+        #aws_session_token=aws_config.get('aws_session_token'),  # Include session token if available
+        region_name=aws_config['region_name']
+    )
+    s3_client.download_file(
+        aws_config['s3_bucket'].split('/')[2],  # Extract bucket name from the S3 path
+        f"{athena_config['s3_staging_dir']}/{query_execution_id}.csv",
+        temp_file_location,
+    )
+    return temp_file_location
+
+# load the saved query results in a pandas DataFrame
+def load_results_to_dataframe(file_location):
+    return pd.read_csv(file_location)
+
+def main():
+    athena_client = create_athena_client()
+    query_response = start_query_execution(athena_client)
+    query_execution_id = query_response["QueryExecutionId"]
+    wait_for_query_to_complete(athena_client, query_execution_id)
+    temp_file_location = download_query_results(query_execution_id)
+    df = load_results_to_dataframe(temp_file_location)
+    print(df)
 
 if __name__ == "__main__":
     aws_config, athena_config = config.read_config()
-    
-    session = boto3.Session(
-        aws_access_key_id=aws_config['aws_access_key_id'],
-        aws_secret_access_key=aws_config['aws_secret_access_key'],
-        region_name=aws_config['region_name']
-    )
-    
-    athena_client = session.client('athena')
-    
-    query = "SELECT * FROM enigma_jhu_enigma_jhu LIMIT 10;"
-    try:
-        df = run_query(athena_client, query, athena_config['database'], athena_config['s3_output_location'])
-        print(df)
-    except Exception as e:
-        print(f"Error: {e}")
+    main()
