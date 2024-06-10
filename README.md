@@ -10,7 +10,7 @@ knowledge I have acquired over the past few months of studying.
 
 The main goal of the project is to build infrastructure on AWS with the use of code. Also, I will show how to seemlessly move data from one to another within this infrastructure, query and also do some transformations.
 
-## Setup Imstructions
+## Setup Instructions
 
 ### Prerequisities
 
@@ -20,11 +20,38 @@ The main goal of the project is to build infrastructure on AWS with the use of c
 
 ### Steps to follow
 
-1. Use aws cli to configure your aws credentials:
-```
+1. Use ** aws cli ** to configure your aws credentials:
+```bash
 aws configure
-'AWS_ACCESS_KEY'
-'AWS_SECRET_KEY'
-'AWS_REGION'
-
 ```
+Then follow the pop instructions to enter your credentials.
+
+2. Clone the Repo:
+```bash
+git clone https://github.com/fafugah1/Covid19-Redshift-Warehouse.git
+cd Covid19-Redshift-Warehouse
+```
+
+3. Make the necessary renaming changes required in the * main.tf * and * variable.tf * files.
+
+For example, my main project bucket name is ** frank-covid-19-bucket **, provide a universally unique name of your choice to avoid conflict.
+
+4. Run the ** main.tf ** file to create your infrastructure:
+```bash
+cd terraform
+terraform init
+terraform plan 
+terraform apply --auto-approve
+```
+Resources expected to be created include:
++ S3 buckets (main & test bucket)
++ Crawler for AWS Glue and Athena
++ Redshift Cluster
++ IAM roles
+
+
+5. Copy data from [source](https://registry.opendata.aws/aws-covid19-lake/) to your bucket:
+```bash
+aws s3 cp s3://source-bucket/source-path/ s3://destination-bucket/destination-path/ --recursive
+```
+
