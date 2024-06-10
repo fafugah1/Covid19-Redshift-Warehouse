@@ -15,12 +15,12 @@ The main goal of the project is to build infrastructure on AWS with the use of c
 ### Prerequisities
 
 + Python 3.10 (any version of python >= 3.6)
-+ AWS account ** (Iam account preferrable) ** and you have to install [aws cli v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
++ AWS account **(Iam account preferrable)** and you have to install [aws cli v2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 + You also have to install [terraform](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli#install-cli)
 
 ### Steps to follow
 
-1. Use ** aws cli ** to configure your aws credentials:
+1. Use **aws cli** to configure your aws credentials:
 ```bash
 aws configure
 ```
@@ -32,11 +32,11 @@ git clone https://github.com/fafugah1/Covid19-Redshift-Warehouse.git
 cd Covid19-Redshift-Warehouse
 ```
 
-3. Make the necessary renaming changes required in the * main.tf * and * variable.tf * files.
+3. Make the necessary renaming changes required in the *main.tf* and *variable.tf* files.
 
-For example, my main project bucket name is ** frank-covid-19-bucket **, provide a universally unique name of your choice to avoid conflict.
+For example, my main project bucket name is **frank-covid-19-bucket**, provide a universally unique name of your choice to avoid conflict.
 
-4. Run the ** main.tf ** file to create your infrastructure:
+4. Run the **main.tf** file to create your infrastructure:
 ```bash
 cd terraform
 terraform init
