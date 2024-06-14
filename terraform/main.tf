@@ -1,3 +1,4 @@
+# creating project test bucket
 resource "aws_s3_bucket" "covid__19" {
   bucket = var.bucket1name
 }
@@ -29,6 +30,8 @@ resource "aws_s3_bucket_acl" "covid__19" {
   acl    = "public-read"
 }
 
+
+# creating main project bucket
 resource "aws_s3_bucket" "covid_19" {
   bucket = var.bucketname
 }
@@ -102,10 +105,10 @@ resource "aws_iam_policy_attachment" "glue_service_role" {
 
 # Define an AWS Glue Database
 resource "aws_glue_catalog_database" "covid_19" {
-  name = "covid_19_db"
+  name = "covid19_db"   # Change the name to avoid conflict
 }
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for enigma_jhu folder
 resource "aws_glue_crawler" "enigmaJHU" {
   name = "enigma_jhu"
   role = aws_iam_role.glue_role.arn
@@ -125,7 +128,7 @@ resource "aws_glue_crawler" "enigmaJHU" {
 }
 
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for hospital_beds folder
 resource "aws_glue_crawler" "hospitalBEDS" {
   name = "hospital_beds"
   role = aws_iam_role.glue_role.arn
@@ -146,13 +149,13 @@ resource "aws_glue_crawler" "hospitalBEDS" {
 }
 
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for country_code folder
 resource "aws_glue_crawler" "countryCODE" {
   name = "country_code"
   role = aws_iam_role.glue_role.arn
   database_name = aws_glue_catalog_database.covid_19.name
   s3_target {
-    path = "s3://frank-covid-19-bucket/static_datasets/csv/countrycode/"
+    path = "s3://frank-covid-19-bucket/static-datasets/csv/countrycode/"
   }
 
   configuration = jsonencode({
@@ -165,13 +168,13 @@ resource "aws_glue_crawler" "countryCODE" {
   })
 }
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for country_population folder
 resource "aws_glue_crawler" "countyPOP" {
   name = "country_population"
   role = aws_iam_role.glue_role.arn
   database_name = aws_glue_catalog_database.covid_19.name
   s3_target {
-    path = "s3://frank-covid-19-bucket/static_datasets/csv/Countypopulation/"
+    path = "s3://frank-covid-19-bucket/static-datasets/csv/CountyPopulation/"
   }
 
   configuration = jsonencode({
@@ -184,13 +187,13 @@ resource "aws_glue_crawler" "countyPOP" {
   })
 }
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for state_abv folder
 resource "aws_glue_crawler" "stateABV" {
   name = "state_abv"
   role = aws_iam_role.glue_role.arn
   database_name = aws_glue_catalog_database.covid_19.name
   s3_target {
-    path = "s3://frank-covid-19-bucket/static_datasets/csv/state-abv/"
+    path = "s3://frank-covid-19-bucket/static-datasets/csv/state-abv/"
   }
 
   configuration = jsonencode({
@@ -203,7 +206,7 @@ resource "aws_glue_crawler" "stateABV" {
   })
 }
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for states_daily folder
 resource "aws_glue_crawler" "statesDAILY" {
   name = "states_daily"
   role = aws_iam_role.glue_role.arn
@@ -222,7 +225,7 @@ resource "aws_glue_crawler" "statesDAILY" {
   })
 }
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for us_daily folder
 resource "aws_glue_crawler" "usDAILY" {
   name = "us_daily"
   role = aws_iam_role.glue_role.arn
@@ -241,7 +244,7 @@ resource "aws_glue_crawler" "usDAILY" {
   })
 }
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for us_total_latest folder
 resource "aws_glue_crawler" "us_total_latest" {
   name = "us-total-latest"
   role = aws_iam_role.glue_role.arn
@@ -260,7 +263,7 @@ resource "aws_glue_crawler" "us_total_latest" {
   })
 }
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for us_county folder
 resource "aws_glue_crawler" "UScounty" {
   name = "us_county"
   role = aws_iam_role.glue_role.arn
@@ -279,7 +282,7 @@ resource "aws_glue_crawler" "UScounty" {
   })
 }
 
-# Define the AWS Glue Crawler
+# Define the AWS Glue Crawler for us_states folder
 resource "aws_glue_crawler" "USstates" {
   name = "us_states"
   role = aws_iam_role.glue_role.arn
@@ -296,4 +299,56 @@ resource "aws_glue_crawler" "USstates" {
       }
     }
   })
+}
+
+#####################################################################
+
+// Configure IAM role with read-only access to S3. This role will be assigned to the Redshift cluster to read data from S3.
+resource "aws_iam_role" "redshift_role" {
+  name = "s3-redshift-role" // Changed name to avoid conflict
+  managed_policy_arns = ["arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess"]
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "redshift.amazonaws.com"
+      }
+    }]
+  })
+}
+
+// Configure Redshift cluster.
+resource "aws_redshift_cluster" "redshift" {
+  cluster_identifier   = "redshift-cluster"
+  skip_final_snapshot  = true
+  database_name        = "mydb"
+  master_username      = "awsuser"
+  master_password      = var.db_password
+  node_type            = "dc2.large"
+  cluster_type         = "single-node"
+  publicly_accessible  = true
+  iam_roles            = [aws_iam_role.redshift_role.arn]
+  vpc_security_group_ids = [aws_security_group.sgs_redshift.id]
+}
+
+// Configure security group for Redshift allowing all inbound/outbound traffic
+resource "aws_security_group" "sgs_redshift" {
+  name = "sgs_redshift_covid_19" // Changed name to avoid conflict
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }

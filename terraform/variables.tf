@@ -13,5 +13,5 @@ variable "bucket1name" {
 variable "db_password" {
   description = "Password for Redshift master DB user"
   type = string
-  default = "Re_cord@001!"
+  default = "Re_cord001!"
 }
