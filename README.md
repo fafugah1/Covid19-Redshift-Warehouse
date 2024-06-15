@@ -74,5 +74,5 @@ Make sure you:
 
 Make sure you:
 + attach your Redshift credentials
-+ identify the index of the headers of the specific files and attah *IGNOREHEADER ‘INDEX No.’* to the copy command
++ identify the index of the headers of the specific files and attach *IGNOREHEADER ‘INDEX No.’* to the copy command
 + you can run any query of your choice
