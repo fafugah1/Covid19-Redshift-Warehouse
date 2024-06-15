@@ -20,23 +20,17 @@ The main goal of the project is to build infrastructure on AWS with the use of c
 
 ### Steps to follow
 
-1. Use **aws cli** to configure your aws credentials:
-```bash
-aws configure
-```
-Then follow the pop instructions to enter your credentials.
-
-2. Clone the Repo:
+1. Clone the Repo:
 ```bash
 git clone https://github.com/fafugah1/Covid19-Redshift-Warehouse.git
 cd Covid19-Redshift-Warehouse
 ```
 
-3. Make the necessary renaming changes required in the *main.tf* and *variable.tf* files.
+2. Make the necessary renaming changes required in the *main.tf* and *variable.tf* files.
 
 For example, my main project bucket name is **frank-covid-19-bucket**, provide a universally unique name of your choice to avoid conflict.
 
-4. Run the **main.tf** file to create your infrastructure:
+3. Run the **main.tf** file to create your infrastructure:
 ```bash
 cd terraform
 terraform init
@@ -49,9 +43,36 @@ Resources expected to be created include:
 + Redshift Cluster
 + IAM roles
 
+4. Access the web, open your AWS console to confirm the creation of your resources and roles with thier respective attached policies.
 
-5. Copy data from [source](https://registry.opendata.aws/aws-covid19-lake/) to your bucket:
+5. Use **aws cli** to configure your aws credentials:
+```bash
+aws configure
+```
+Then follow the pop instructions to enter your credentials.
+
+6. Copy data from [source](https://registry.opendata.aws/aws-covid19-lake/) to your bucket:
 ```bash
 aws s3 cp s3://source-bucket/source-path/ s3://destination-bucket/destination-path/ --recursive
 ```
 
+7. Once the data files are successfully copied: 
++ access your **AWS Glue Crawlers**
++ select the crawlers, and run them
++ ensure that a table is created for each crawler
++ then access your **Athena**
++ select your schema to show tables
++ run any queries of choice on the tables
+
+8. Connect to Athena with the **etl_script.ipynb** in the **src folder** and query the data.
+
+Make sure you:
++ attach your AWS credentials
++ create **output** folders in both you project and test buckets
+
+9. Use the **glue_deployment.ipynb** in the **src folder** to copy your proccessed data to Redshift.
+
+Make sure you:
++ attach your Redshift credentials
++ identify the index of the headers of the specific files and attah *IGNOREHEADER ‘INDEX No.’* to the copy command
++ you can run any query of your choice
